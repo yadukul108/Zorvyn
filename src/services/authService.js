@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import Role from '../models/Role.js';
 
 class AuthService {
   async hashPassword(password) {
@@ -23,10 +24,29 @@ class AuthService {
   async register(userData) {
     const { name, email, password, role } = userData;
 
+    if (!name || !email || !password) {
+      throw new Error('Name, email and password are required');
+    }
+
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       throw new Error('User already exists');
+    }
+
+    // Determine role
+    let roleId = role;
+    if (!roleId) {
+      const defaultRole = await Role.findOne({ name: 'Viewer' });
+      if (!defaultRole) {
+        throw new Error('Default role not found. Please create roles first.');
+      }
+      roleId = defaultRole._id;
+    } else {
+      const roleExists = await Role.findById(roleId);
+      if (!roleExists) {
+        throw new Error('Role not found');
+      }
     }
 
     // Hash password
@@ -37,11 +57,11 @@ class AuthService {
       name,
       email,
       password: hashedPassword,
-      role
+      role: roleId
     });
 
     await user.save();
-    return user;
+    return await this.getUserById(user._id);
   }
 
   async login(email, password) {
