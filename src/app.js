@@ -2,6 +2,7 @@ import express from 'express';
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
 import roleRoutes from './routes/roles.js';
+import transactionRoutes from './routes/transactions.js';
 
 const app = express();
 
@@ -12,6 +13,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/roles', roleRoutes);
+app.use('/api/transactions', transactionRoutes);
 
 // health check route
 app.get('/health', (req, res) => {
