@@ -7,15 +7,6 @@ import { userCreateSchema, userUpdateSchema } from '../validators/schemas.js';
 
 const router = express.Router();
 
-import express from 'express';
-import UserController from '../controllers/userController.js';
-import authMiddleware from '../middlewares/auth.js';
-import rbacMiddleware from '../middlewares/rbac.js';
-import validate from '../middlewares/validate.js';
-import { userCreateSchema, userUpdateSchema } from '../validators/schemas.js';
-
-const router = express.Router();
-
 router.use(authMiddleware);
 
 /**

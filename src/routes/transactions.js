@@ -9,17 +9,6 @@ const router = express.Router();
 
 router.use(authMiddleware);
 
-import express from 'express';
-import TransactionController from '../controllers/transactionController.js';
-import authMiddleware from '../middlewares/auth.js';
-import rbacMiddleware from '../middlewares/rbac.js';
-import validate from '../middlewares/validate.js';
-import { transactionCreateSchema, transactionUpdateSchema, transactionQuerySchema, transactionIdSchema, dashboardSummarySchema, categoryAggregationSchema, monthlyTrendsSchema } from '../validators/schemas.js';
-
-const router = express.Router();
-
-router.use(authMiddleware);
-
 /**
  * @swagger
  * /api/transactions:

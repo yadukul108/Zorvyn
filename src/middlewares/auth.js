@@ -1,29 +1,79 @@
 import jwt from 'jsonwebtoken';
 import AuthService from '../services/authService.js';
+import { JWT_CONFIG, USER_STATUS } from '../utils/constants.js';
+import { AuthenticationError } from '../utils/errors.js';
+import logger from '../utils/logger.js';
 
 const authMiddleware = async (req, res, next) => {
   try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
+    const authHeader = req.header('Authorization');
 
-    if (!token) {
-      return res.status(401).json({ error: 'Access denied. No token provided.' });
+    if (!authHeader) {
+      throw new AuthenticationError('Access denied. No token provided.');
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    if (!authHeader.startsWith('Bearer ')) {
+      throw new AuthenticationError('Invalid token format. Use Bearer token.');
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+
+    if (!token) {
+      throw new AuthenticationError('Access denied. No token provided.');
+    }
+
+    const decoded = jwt.verify(token, JWT_CONFIG.SECRET);
     const user = await AuthService.getUserById(decoded.userId);
 
     if (!user) {
-      return res.status(401).json({ error: 'Invalid token.' });
+      throw new AuthenticationError('Invalid token. User not found.');
     }
 
-    if (user.status !== 'active') {
-      return res.status(401).json({ error: 'Account is not active.' });
+    if (user.status !== USER_STATUS.ACTIVE) {
+      throw new AuthenticationError('Account is not active.');
     }
+
+    // Update last login
+    user.lastLogin = new Date();
+    await user.save();
 
     req.user = user;
+
+    logger.debug('User authenticated', {
+      userId: user._id,
+      email: user.email,
+      role: user.role?.name,
+    });
+
     next();
   } catch (error) {
-    res.status(401).json({ error: 'Invalid token.' });
+    if (error instanceof AuthenticationError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        error: error.message,
+      });
+    }
+
+    // Handle JWT errors
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid token.',
+      });
+    }
+
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        success: false,
+        error: 'Token expired.',
+      });
+    }
+
+    logger.error('Authentication middleware error', { error: error.message });
+    return res.status(500).json({
+      success: false,
+      error: 'Authentication failed.',
+    });
   }
 };
 
