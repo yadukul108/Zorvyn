@@ -79,7 +79,25 @@ class TransactionController {
       res.status(400).json({ error: error.message });
     }
   }
+  async restoreTransaction(req, res) {
+    try {
+      const canAccessAll = await RBACService.canUpdateAllTransactions(req.user);
+      const transaction = await TransactionService.restoreTransaction(req.params.id, req.user._id, canAccessAll);
+      res.json({ message: 'Transaction restored successfully', transaction });
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  }
 
+  async getDeletedTransactions(req, res) {
+    try {
+      const canAccessAll = await RBACService.canReadAllTransactions(req.user);
+      const transactions = await TransactionService.getDeletedTransactions(req.user._id, canAccessAll);
+      res.json({ transactions });
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  }
   async getDashboardSummary(req, res) {
     try {
       const { dateFrom, dateTo } = req.query;

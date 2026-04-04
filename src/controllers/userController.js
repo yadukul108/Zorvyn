@@ -77,7 +77,23 @@ class UserController {
       res.status(500).json({ error: error.message });
     }
   }
+  async restoreUser(req, res) {
+    try {
+      const user = await UserService.restoreUser(req.params.id);
+      res.json({ message: 'User restored successfully', user });
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  }
 
+  async getDeletedUsers(req, res) {
+    try {
+      const users = await UserService.getDeletedUsers();
+      res.json({ users });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
   async assignRole(req, res) {
     try {
       const { roleId } = req.body;

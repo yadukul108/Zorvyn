@@ -2,7 +2,7 @@ import Transaction from '../models/Transaction.js';
 
 class TransactionService {
   async getTransactions({ userId, page = 1, limit = 20, dateFrom, dateTo, category, type, canAccessAll = false }) {
-    const filter = {};
+    const filter = { deletedAt: null };
 
     // If user cannot access all transactions, filter by their own userId
     if (!canAccessAll) {
@@ -48,7 +48,7 @@ class TransactionService {
   }
 
   async getTransactionById(transactionId, userId, canAccessAll = false) {
-    const transaction = await Transaction.findById(transactionId).populate('user', 'name email role status');
+    const transaction = await Transaction.findOne({ _id: transactionId, deletedAt: null }).populate('user', 'name email role status');
     if (!transaction) {
       throw new Error('Transaction not found');
     }
@@ -93,7 +93,7 @@ class TransactionService {
   }
 
   async deleteTransaction(transactionId, userId, canAccessAll = false) {
-    const transaction = await Transaction.findById(transactionId);
+    const transaction = await Transaction.findOne({ _id: transactionId, deletedAt: null });
     if (!transaction) {
       throw new Error('Transaction not found');
     }
@@ -103,8 +103,37 @@ class TransactionService {
       throw new Error('Unauthorized access');
     }
 
-    await transaction.remove();
+    transaction.deletedAt = new Date();
+    await transaction.save();
     return transaction;
+  }
+
+  async restoreTransaction(transactionId, userId, canAccessAll = false) {
+    const transaction = await Transaction.findOne({ _id: transactionId, deletedAt: { $ne: null } });
+    if (!transaction) {
+      throw new Error('Transaction not found or not deleted');
+    }
+
+    // Check if user can access this transaction
+    if (!canAccessAll && transaction.user.toString() !== userId.toString()) {
+      throw new Error('Unauthorized access');
+    }
+
+    transaction.deletedAt = null;
+    await transaction.save();
+    return await this.getTransactionById(transaction._id, userId, canAccessAll);
+  }
+
+  async getDeletedTransactions(userId, canAccessAll = false) {
+    const filter = { deletedAt: { $ne: null } };
+
+    if (!canAccessAll) {
+      filter.user = userId;
+    }
+
+    return await Transaction.find(filter)
+      .sort({ deletedAt: -1 })
+      .populate('user', 'name email');
   }
 
   async getDashboardSummary(userId, dateFrom, dateTo) {

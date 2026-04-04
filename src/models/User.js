@@ -29,6 +29,10 @@ const userSchema = new mongoose.Schema({
     avatar: String,
     phone: String,
     department: String
+  },
+  deletedAt: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true

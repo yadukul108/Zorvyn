@@ -47,7 +47,11 @@ const transactionSchema = new mongoose.Schema({
     filename: String,
     url: String,
     uploadedAt: Date
-  }]
+  }],
+  deletedAt: {
+    type: Date,
+    default: null
+  }
 }, {
   timestamps: true
 });

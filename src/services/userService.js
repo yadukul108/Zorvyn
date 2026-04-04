@@ -9,11 +9,11 @@ class UserService {
   }
 
   async getAllUsers(filter = {}) {
-    return await User.find(filter).populate('role', '-__v').select('-password');
+    return await User.find({ ...filter, deletedAt: null }).populate('role', '-__v').select('-password');
   }
 
   async getUserById(userId) {
-    return await User.findById(userId).populate('role', '-__v').select('-password');
+    return await User.findOne({ _id: userId, deletedAt: null }).populate('role', '-__v').select('-password');
   }
 
   async createUser(userData) {
@@ -100,11 +100,29 @@ class UserService {
   }
 
   async deleteUser(userId) {
-    const user = await User.findByIdAndDelete(userId);
+    const user = await User.findOne({ _id: userId, deletedAt: null });
     if (!user) {
       throw new Error('User not found');
     }
+
+    user.deletedAt = new Date();
+    await user.save();
     return user;
+  }
+
+  async restoreUser(userId) {
+    const user = await User.findOne({ _id: userId, deletedAt: { $ne: null } });
+    if (!user) {
+      throw new Error('User not found or not deleted');
+    }
+
+    user.deletedAt = null;
+    await user.save();
+    return await this.getUserById(user._id);
+  }
+
+  async getDeletedUsers() {
+    return await User.find({ deletedAt: { $ne: null } }).populate('role', '-__v').select('-password');
   }
 
   async assignRole(userId, roleId) {
