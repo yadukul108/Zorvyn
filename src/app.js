@@ -8,6 +8,7 @@ import roleRoutes from './routes/roles.js';
 import transactionRoutes from './routes/transactions.js';
 import adminRoutes from './routes/admin.js';
 import errorHandler from './middlewares/errorHandler.js';
+import { SERVER_CONFIG } from './utils/constants.js';
 
 const app = express();
 
@@ -26,7 +27,7 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: 'http://localhost:5000',
+        url: `http://localhost:${SERVER_CONFIG.PORT}`,
         description: 'Development server',
       },
     ],
