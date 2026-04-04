@@ -27,8 +27,8 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: `http://localhost:${SERVER_CONFIG.PORT}`,
-        description: 'Development server',
+        url: process.env.RENDER_EXTERNAL_URL || `http://localhost:${SERVER_CONFIG.PORT}`,
+        description: process.env.RENDER_EXTERNAL_URL ? 'Production server' : 'Development server',
       },
     ],
     components: {
@@ -164,7 +164,12 @@ const swaggerOptions = {
       },
     ],
   },
-  apis: ['./src/routes/*.js'], // Path to the API routes
+  apis: [
+    './src/routes/*.js', // For development (running from root)
+    './routes/*.js',      // For production (running from src on Render)
+    './src/app.js',
+    './app.js'
+  ],
 };
 
 const swaggerSpec = swaggerJSDoc(swaggerOptions);
