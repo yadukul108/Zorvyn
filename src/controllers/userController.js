@@ -1,4 +1,5 @@
 import UserService from '../services/userService.js';
+import RBACService from '../services/rbacService.js';
 
 class UserController {
   async listUsers(req, res) {
@@ -16,6 +17,15 @@ class UserController {
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
+
+      // Check if user can access this profile
+      const isOwnProfile = req.params.id === req.user._id.toString();
+      const canReadAll = await RBACService.canReadAllUsers(req.user);
+
+      if (!isOwnProfile && !canReadAll) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+
       res.json({ user });
     } catch (error) {
       res.status(400).json({ error: error.message });
@@ -33,6 +43,19 @@ class UserController {
 
   async updateUser(req, res) {
     try {
+      // Check if user can update this profile
+      const isOwnProfile = req.params.id === req.user._id.toString();
+      const canUpdateAll = await RBACService.canUpdateAllUsers(req.user);
+      const canUpdateOwn = await RBACService.canUpdateOwnUser(req.user);
+
+      if (!isOwnProfile && !canUpdateAll) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+
+      if (isOwnProfile && !canUpdateOwn && !canUpdateAll) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+
       const user = await UserService.updateUser(req.params.id, req.body);
       res.json({ message: 'User updated', user });
     } catch (error) {

@@ -1,8 +1,13 @@
 import Transaction from '../models/Transaction.js';
 
 class TransactionService {
-  async getTransactions({ userId, page = 1, limit = 20, dateFrom, dateTo, category, type }) {
-    const filter = { user: userId };
+  async getTransactions({ userId, page = 1, limit = 20, dateFrom, dateTo, category, type, canAccessAll = false }) {
+    const filter = {};
+
+    // If user cannot access all transactions, filter by their own userId
+    if (!canAccessAll) {
+      filter.user = userId;
+    }
 
     if (type) {
       filter.type = type;
@@ -42,14 +47,17 @@ class TransactionService {
     };
   }
 
-  async getTransactionById(transactionId, userId) {
+  async getTransactionById(transactionId, userId, canAccessAll = false) {
     const transaction = await Transaction.findById(transactionId).populate('user', 'name email role status');
     if (!transaction) {
       throw new Error('Transaction not found');
     }
-    if (transaction.user._id.toString() !== userId.toString()) {
+
+    // Check if user can access this transaction
+    if (!canAccessAll && transaction.user._id.toString() !== userId.toString()) {
       throw new Error('Unauthorized access');
     }
+
     return transaction;
   }
 
@@ -63,14 +71,17 @@ class TransactionService {
     return await Transaction.findById(transaction._id).populate('user', 'name email');
   }
 
-  async updateTransaction(transactionId, userId, payload) {
+  async updateTransaction(transactionId, userId, payload, canAccessAll = false) {
     const transaction = await Transaction.findById(transactionId);
     if (!transaction) {
       throw new Error('Transaction not found');
     }
-    if (transaction.user.toString() !== userId.toString()) {
+
+    // Check if user can access this transaction
+    if (!canAccessAll && transaction.user.toString() !== userId.toString()) {
       throw new Error('Unauthorized access');
     }
+
     const updatable = ['amount', 'type', 'category', 'subcategory', 'date', 'description', 'notes', 'tags', 'paymentMethod', 'isRecurring', 'recurringFrequency', 'status', 'attachments'];
     updatable.forEach((field) => {
       if (Object.prototype.hasOwnProperty.call(payload, field)) {
@@ -81,12 +92,14 @@ class TransactionService {
     return await Transaction.findById(transaction._id).populate('user', 'name email');
   }
 
-  async deleteTransaction(transactionId, userId) {
+  async deleteTransaction(transactionId, userId, canAccessAll = false) {
     const transaction = await Transaction.findById(transactionId);
     if (!transaction) {
       throw new Error('Transaction not found');
     }
-    if (transaction.user.toString() !== userId.toString()) {
+
+    // Check if user can access this transaction
+    if (!canAccessAll && transaction.user.toString() !== userId.toString()) {
       throw new Error('Unauthorized access');
     }
 

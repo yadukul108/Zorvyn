@@ -1,8 +1,10 @@
 import TransactionService from '../services/transactionService.js';
+import RBACService from '../services/rbacService.js';
 
 class TransactionController {
   async listTransactions(req, res) {
     try {
+      const canAccessAll = await RBACService.canReadAllTransactions(req.user);
       const filters = {
         userId: req.user._id,
         page: req.query.page || 1,
@@ -10,7 +12,8 @@ class TransactionController {
         dateFrom: req.query.dateFrom,
         dateTo: req.query.dateTo,
         category: req.query.category,
-        type: req.query.type
+        type: req.query.type,
+        canAccessAll
       };
 
       const result = await TransactionService.getTransactions(filters);
@@ -22,7 +25,8 @@ class TransactionController {
 
   async getTransaction(req, res) {
     try {
-      const transaction = await TransactionService.getTransactionById(req.params.id, req.user._id);
+      const canAccessAll = await RBACService.canReadAllTransactions(req.user);
+      const transaction = await TransactionService.getTransactionById(req.params.id, req.user._id, canAccessAll);
       res.json({ transaction });
     } catch (error) {
       if (error.message === 'Transaction not found') {
@@ -46,7 +50,8 @@ class TransactionController {
 
   async updateTransaction(req, res) {
     try {
-      const transaction = await TransactionService.updateTransaction(req.params.id, req.user._id, req.body);
+      const canAccessAll = await RBACService.canUpdateAllTransactions(req.user);
+      const transaction = await TransactionService.updateTransaction(req.params.id, req.user._id, req.body, canAccessAll);
       res.json({ message: 'Transaction updated', transaction });
     } catch (error) {
       if (error.message === 'Transaction not found') {
@@ -61,7 +66,8 @@ class TransactionController {
 
   async deleteTransaction(req, res) {
     try {
-      await TransactionService.deleteTransaction(req.params.id, req.user._id);
+      const canAccessAll = await RBACService.canDeleteAllTransactions(req.user);
+      await TransactionService.deleteTransaction(req.params.id, req.user._id, canAccessAll);
       res.json({ message: 'Transaction deleted' });
     } catch (error) {
       if (error.message === 'Transaction not found') {
