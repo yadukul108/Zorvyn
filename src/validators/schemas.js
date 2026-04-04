@@ -1,117 +1,126 @@
-import { z } from 'zod';
+import Joi from 'joi';
 
-export const registerSchema = z.object({
-  body: z.object({
-    name: z.string().min(1),
-    email: z.string().email(),
-    password: z.string().min(6),
-    role: z.string().optional()
-  })
+const idParam = Joi.object({
+  id: Joi.string().min(1).required()
 });
 
-export const loginSchema = z.object({
-  body: z.object({
-    email: z.string().email(),
-    password: z.string().min(6)
-  })
+const statusEnum = ['active', 'inactive', 'suspended'];
+const transactionTypeEnum = ['income', 'expense'];
+const paymentMethods = ['cash', 'credit_card', 'debit_card', 'bank_transfer', 'check', 'other'];
+const transactionStatusEnum = ['pending', 'completed', 'cancelled'];
+
+export const registerSchema = Joi.object({
+  body: Joi.object({
+    name: Joi.string().min(1).required(),
+    email: Joi.string().email().required(),
+    password: Joi.string().min(6).required(),
+    role: Joi.string().optional()
+  }).required()
 });
 
-export const userCreateSchema = z.object({
-  body: z.object({
-    name: z.string().min(1),
-    email: z.string().email(),
-    password: z.string().min(6),
-    role: z.string().optional(),
-    status: z.enum(['active', 'inactive', 'suspended']).optional(),
-    profile: z.object({
-      avatar: z.string().url().optional(),
-      phone: z.string().optional(),
-      department: z.string().optional()
+export const loginSchema = Joi.object({
+  body: Joi.object({
+    email: Joi.string().email().required(),
+    password: Joi.string().min(6).required()
+  }).required()
+});
+
+export const userCreateSchema = Joi.object({
+  body: Joi.object({
+    name: Joi.string().min(1).required(),
+    email: Joi.string().email().required(),
+    password: Joi.string().min(6).required(),
+    role: Joi.string().optional(),
+    status: Joi.string().valid(...statusEnum).optional(),
+    profile: Joi.object({
+      avatar: Joi.string().uri().optional(),
+      phone: Joi.string().optional(),
+      department: Joi.string().optional()
     }).optional()
-  })
+  }).required()
 });
 
-export const userUpdateSchema = z.object({
-  params: z.object({
-    id: z.string().min(1)
-  }),
-  body: z.object({
-    name: z.string().min(1).optional(),
-    email: z.string().email().optional(),
-    password: z.string().min(6).optional(),
-    role: z.string().optional(),
-    status: z.enum(['active', 'inactive', 'suspended']).optional(),
-    profile: z.object({
-      avatar: z.string().url().optional(),
-      phone: z.string().optional(),
-      department: z.string().optional()
+export const userUpdateSchema = Joi.object({
+  params: idParam.required(),
+  body: Joi.object({
+    name: Joi.string().min(1).optional(),
+    email: Joi.string().email().optional(),
+    password: Joi.string().min(6).optional(),
+    role: Joi.string().optional(),
+    status: Joi.string().valid(...statusEnum).optional(),
+    profile: Joi.object({
+      avatar: Joi.string().uri().optional(),
+      phone: Joi.string().optional(),
+      department: Joi.string().optional()
     }).optional()
-  })
+  }).required()
 });
 
-export const roleCreateSchema = z.object({
-  body: z.object({
-    name: z.enum(['Viewer', 'Analyst', 'Admin']),
-    description: z.string().optional(),
-    permissions: z.array(z.string()).optional(),
-    isActive: z.boolean().optional()
-  })
+export const roleCreateSchema = Joi.object({
+  body: Joi.object({
+    name: Joi.string().valid('Viewer', 'Analyst', 'Admin').required(),
+    description: Joi.string().optional(),
+    permissions: Joi.array().items(Joi.string()).optional(),
+    isActive: Joi.boolean().optional()
+  }).required()
 });
 
-export const transactionCreateSchema = z.object({
-  body: z.object({
-    amount: z.number().gt(0),
-    type: z.enum(['income', 'expense']),
-    category: z.string().min(1),
-    subcategory: z.string().optional(),
-    date: z.preprocess((value) => (value ? new Date(value) : new Date()), z.date()),
-    description: z.string().optional(),
-    notes: z.string().optional(),
-    tags: z.array(z.string()).optional(),
-    paymentMethod: z.enum(['cash', 'credit_card', 'debit_card', 'bank_transfer', 'check', 'other']).optional(),
-    isRecurring: z.boolean().optional(),
-    recurringFrequency: z.string().optional(),
-    status: z.enum(['pending', 'completed', 'cancelled']).optional(),
-    attachments: z.array(z.object({ filename: z.string(), url: z.string().url(), uploadedAt: z.preprocess((value) => (value ? new Date(value) : new Date()), z.date()) })).optional()
-  })
+const attachmentSchema = Joi.object({
+  filename: Joi.string().required(),
+  url: Joi.string().uri().required(),
+  uploadedAt: Joi.date().iso().optional()
 });
 
-export const transactionUpdateSchema = z.object({
-  params: z.object({
-    id: z.string().min(1)
-  }),
-  body: z.object({
-    amount: z.number().gt(0).optional(),
-    type: z.enum(['income', 'expense']).optional(),
-    category: z.string().min(1).optional(),
-    subcategory: z.string().optional(),
-    date: z.preprocess((value) => (value ? new Date(value) : undefined), z.date().optional()),
-    description: z.string().optional(),
-    notes: z.string().optional(),
-    tags: z.array(z.string()).optional(),
-    paymentMethod: z.enum(['cash', 'credit_card', 'debit_card', 'bank_transfer', 'check', 'other']).optional(),
-    isRecurring: z.boolean().optional(),
-    recurringFrequency: z.string().optional(),
-    status: z.enum(['pending', 'completed', 'cancelled']).optional(),
-    attachments: z.array(z.object({ filename: z.string(), url: z.string().url(), uploadedAt: z.preprocess((value) => (value ? new Date(value) : new Date()), z.date()) })).optional()
-  }).partial()
+export const transactionCreateSchema = Joi.object({
+  body: Joi.object({
+    amount: Joi.number().greater(0).required(),
+    type: Joi.string().valid(...transactionTypeEnum).required(),
+    category: Joi.string().min(1).required(),
+    subcategory: Joi.string().optional(),
+    date: Joi.date().iso().default(() => new Date()),
+    description: Joi.string().optional(),
+    notes: Joi.string().optional(),
+    tags: Joi.array().items(Joi.string()).optional(),
+    paymentMethod: Joi.string().valid(...paymentMethods).optional(),
+    isRecurring: Joi.boolean().optional(),
+    recurringFrequency: Joi.string().optional(),
+    status: Joi.string().valid(...transactionStatusEnum).optional(),
+    attachments: Joi.array().items(attachmentSchema).optional()
+  }).required()
 });
 
-export const transactionQuerySchema = z.object({
-  query: z.object({
-    page: z.preprocess((value) => (value ? Number(value) : 1), z.number().int().positive()).optional(),
-    limit: z.preprocess((value) => (value ? Number(value) : 20), z.number().int().positive()).optional(),
-    dateFrom: z.string().optional(),
-    dateTo: z.string().optional(),
-    category: z.string().optional(),
-    type: z.enum(['income', 'expense']).optional()
-  })
+export const transactionUpdateSchema = Joi.object({
+  params: idParam.required(),
+  body: Joi.object({
+    amount: Joi.number().greater(0).optional(),
+    type: Joi.string().valid(...transactionTypeEnum).optional(),
+    category: Joi.string().min(1).optional(),
+    subcategory: Joi.string().optional(),
+    date: Joi.date().iso().optional(),
+    description: Joi.string().optional(),
+    notes: Joi.string().optional(),
+    tags: Joi.array().items(Joi.string()).optional(),
+    paymentMethod: Joi.string().valid(...paymentMethods).optional(),
+    isRecurring: Joi.boolean().optional(),
+    recurringFrequency: Joi.string().optional(),
+    status: Joi.string().valid(...transactionStatusEnum).optional(),
+    attachments: Joi.array().items(attachmentSchema).optional()
+  }).required()
 });
 
-export const transactionIdSchema = z.object({
-  params: z.object({
-    id: z.string().min(1)
-  })
+export const transactionQuerySchema = Joi.object({
+  query: Joi.object({
+    page: Joi.number().integer().positive().default(1).optional(),
+    limit: Joi.number().integer().positive().default(20).optional(),
+    dateFrom: Joi.date().iso().optional(),
+    dateTo: Joi.date().iso().optional(),
+    category: Joi.string().optional(),
+    type: Joi.string().valid(...transactionTypeEnum).optional()
+  }).required()
+});
+
+export const transactionIdSchema = Joi.object({
+  params: idParam.required()
 });
 
 export const dashboardSummarySchema = z.object({

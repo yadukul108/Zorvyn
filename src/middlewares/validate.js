@@ -1,27 +1,30 @@
-import { ZodError } from 'zod';
+import Joi from 'joi';
 
 const validate = (schema) => (req, res, next) => {
-  try {
-    const parsed = schema.parse({
+  const options = {
+    abortEarly: false,
+    allowUnknown: false,
+    stripUnknown: true
+  };
+
+  const { error, value } = schema.validate(
+    {
       body: req.body,
       params: req.params,
       query: req.query
-    });
+    },
+    options
+  );
 
-    // Replace with parsed values to ensure coerce and defaults
-    req.body = parsed.body;
-    req.params = parsed.params;
-    req.query = parsed.query;
-    next();
-  } catch (error) {
-    if (error instanceof ZodError) {
-      return res.status(400).json({
-        error: 'Validation error',
-        details: error.errors
-      });
-    }
-    next(error);
+  if (error) {
+    error.status = 400;
+    return next(error);
   }
+
+  req.body = value.body;
+  req.params = value.params;
+  req.query = value.query;
+  next();
 };
 
 export default validate;

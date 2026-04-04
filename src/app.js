@@ -3,6 +3,7 @@ import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
 import roleRoutes from './routes/roles.js';
 import transactionRoutes from './routes/transactions.js';
+import errorHandler from './middlewares/errorHandler.js';
 
 const app = express();
 
@@ -19,5 +20,8 @@ app.use('/api/transactions', transactionRoutes);
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
+
+// centralized error handling
+app.use(errorHandler);
 
 export default app;
