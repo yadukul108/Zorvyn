@@ -44,7 +44,9 @@ const rbacMiddleware = {
   canDeleteRole: authorize('role:delete'),
 
   // Generic authorize function for custom permissions
-  authorize
+  authorize,
+  // Alias for backward compatibility
+  checkPermission: authorize
 };
 
 export default rbacMiddleware;
