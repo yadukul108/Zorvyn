@@ -1,5 +1,7 @@
 import express from 'express';
 import morgan from 'morgan';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import authRoutes from './routes/auth.js';
@@ -11,6 +13,9 @@ import errorHandler from './middlewares/errorHandler.js';
 import { SERVER_CONFIG } from './utils/constants.js';
 
 const app = express();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // middleware
 app.use(express.json());
@@ -165,10 +170,9 @@ const swaggerOptions = {
     ],
   },
   apis: [
-    './src/routes/*.js', // For development (running from root)
-    './routes/*.js',      // For production (running from src on Render)
-    './src/app.js',
-    './app.js'
+    path.join(__dirname, './routes/*.js'),
+    path.join(__dirname, './controllers/*.js'),
+    path.join(__dirname, './app.js'),
   ],
 };
 
