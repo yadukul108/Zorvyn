@@ -114,3 +114,12 @@ export const PAGINATION_CONFIG = {
   DEFAULT_LIMIT: 20,
   MAX_LIMIT: 100,
 };
+
+export const CLEANUP_CONFIG = {
+  // Days to keep soft-deleted records before permanent deletion
+  RETENTION_DAYS: parseInt(process.env.CLEANUP_RETENTION_DAYS) || 30,
+  // Run cleanup job every N hours
+  INTERVAL_HOURS: parseInt(process.env.CLEANUP_INTERVAL_HOURS) || 24,
+  // Enable/disable cleanup job
+  ENABLED: process.env.CLEANUP_ENABLED !== 'false',
+};

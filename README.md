@@ -2,11 +2,6 @@
 
 A comprehensive Node.js/Express REST API for personal finance management with advanced analytics, role-based access control, and modern development practices.
 
-[![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
-[![Express.js](https://img.shields.io/badge/Express.js-4.18+-blue.svg)](https://expressjs.com/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-7.0+-green.svg)](https://www.mongodb.com/)
-[![JWT](https://img.shields.io/badge/JWT-Authentication-orange.svg)](https://jwt.io/)
-[![Swagger](https://img.shields.io/badge/Swagger-API_Docs-blue.svg)](https://swagger.io/)
 
 ## 🚀 Features
 
@@ -35,6 +30,12 @@ A comprehensive Node.js/Express REST API for personal finance management with ad
 - **Date range filtering** for all analytics
 - **Real-time calculations** with optimized aggregation queries
 
+### 🧹 Data Management
+- **Automatic Cleanup**: Scheduled removal of old soft-deleted records
+- **Configurable Retention**: Set retention period for deleted data (default: 30 days)
+- **Admin Controls**: Manual cleanup triggers and statistics monitoring
+- **Safe Deletion**: Permanent removal only after retention period
+
 ### 🛠️ Developer Experience
 - **Comprehensive API documentation** with Swagger UI
 - **HTTP request logging** with Morgan
@@ -55,7 +56,8 @@ src/
 │   ├── authController.js
 │   ├── userController.js
 │   ├── roleController.js
-│   └── transactionController.js
+│   ├── transactionController.js
+│   └── adminController.js
 ├── middlewares/     # Express middlewares
 │   ├── auth.js      # JWT authentication
 │   ├── rbac.js      # Role-based access control
@@ -69,13 +71,20 @@ src/
 │   ├── auth.js
 │   ├── users.js
 │   ├── roles.js
-│   └── transactions.js
+│   ├── transactions.js
+│   └── admin.js
 ├── services/        # Business logic layer
 │   ├── authService.js
 │   ├── userService.js
 │   ├── roleService.js
-│   └── transactionService.js
+│   ├── transactionService.js
+│   └── cleanupService.js
 ├── utils/           # Utility functions
+│   ├── constants.js
+│   ├── errors.js
+│   ├── responses.js
+│   ├── logger.js
+│   └── scheduler.js
 ├── validators/      # Validation schemas
 │   └── schemas.js
 ├── app.js           # Express app configuration
@@ -129,6 +138,11 @@ MONGO_URI=mongodb://localhost:27017/finance-dashboard
 # JWT Configuration
 JWT_SECRET=your-super-secret-jwt-key-here
 JWT_EXPIRES_IN=7d
+
+# Cleanup Configuration
+CLEANUP_RETENTION_DAYS=30
+CLEANUP_INTERVAL_HOURS=24
+CLEANUP_ENABLED=true
 
 # Optional: External Services
 # REDIS_URL=redis://localhost:6379
@@ -511,6 +525,12 @@ All endpoints require authentication via JWT token in Authorization header.
 ### Role Management (Admin only)
 - `GET /api/roles` - List all roles
 - `POST /api/roles` - Create new role
+
+### Admin Operations (Admin only)
+- `GET /api/admin/cleanup/stats` - Get cleanup statistics and scheduler status
+- `GET /api/admin/cleanup/preview` - Preview what would be cleaned up
+- `GET /api/admin/cleanup/status` - Get scheduler status
+- `POST /api/admin/cleanup/run` - Manually trigger cleanup
 
 ### Authentication
 - `POST /api/auth/register` - Register new user
