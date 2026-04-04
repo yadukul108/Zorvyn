@@ -113,3 +113,23 @@ export const transactionIdSchema = z.object({
     id: z.string().min(1)
   })
 });
+
+export const dashboardSummarySchema = z.object({
+  query: z.object({
+    dateFrom: z.string().optional(),
+    dateTo: z.string().optional()
+  })
+});
+
+export const categoryAggregationSchema = z.object({
+  query: z.object({
+    dateFrom: z.string().optional(),
+    dateTo: z.string().optional()
+  })
+});
+
+export const monthlyTrendsSchema = z.object({
+  params: z.object({
+    year: z.preprocess((value) => (value ? Number(value) : new Date().getFullYear()), z.number().int().min(2000).max(2100)).optional()
+  })
+});

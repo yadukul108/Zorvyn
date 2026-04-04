@@ -93,6 +93,177 @@ class TransactionService {
     await transaction.remove();
     return transaction;
   }
+
+  async getDashboardSummary(userId, dateFrom, dateTo) {
+    const matchFilter = { user: userId, status: 'completed' };
+
+    if (dateFrom || dateTo) {
+      matchFilter.date = {};
+      if (dateFrom) matchFilter.date.$gte = new Date(dateFrom);
+      if (dateTo) matchFilter.date.$lte = new Date(dateTo);
+    }
+
+    const summary = await Transaction.aggregate([
+      { $match: matchFilter },
+      {
+        $group: {
+          _id: '$type',
+          total: { $sum: '$amount' }
+        }
+      }
+    ]);
+
+    const income = summary.find(item => item._id === 'income')?.total || 0;
+    const expense = summary.find(item => item._id === 'expense')?.total || 0;
+    const balance = income - expense;
+
+    return {
+      income,
+      expense,
+      balance,
+      period: {
+        from: dateFrom ? new Date(dateFrom) : null,
+        to: dateTo ? new Date(dateTo) : null
+      }
+    };
+  }
+
+  async getCategoryAggregation(userId, dateFrom, dateTo) {
+    const matchFilter = { user: userId, status: 'completed' };
+
+    if (dateFrom || dateTo) {
+      matchFilter.date = {};
+      if (dateFrom) matchFilter.date.$gte = new Date(dateFrom);
+      if (dateTo) matchFilter.date.$lte = new Date(dateTo);
+    }
+
+    const aggregation = await Transaction.aggregate([
+      { $match: matchFilter },
+      {
+        $group: {
+          _id: {
+            category: '$category',
+            type: '$type'
+          },
+          total: { $sum: '$amount' },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $group: {
+          _id: '$_id.category',
+          income: {
+            $sum: {
+              $cond: [{ $eq: ['$_id.type', 'income'] }, '$total', 0]
+            }
+          },
+          expense: {
+            $sum: {
+              $cond: [{ $eq: ['$_id.type', 'expense'] }, '$total', 0]
+            }
+          },
+          transactionCount: { $sum: '$count' }
+        }
+      },
+      {
+        $project: {
+          category: '$_id',
+          income: 1,
+          expense: 1,
+          transactionCount: 1,
+          netAmount: { $subtract: ['$income', '$expense'] }
+        }
+      },
+      { $sort: { netAmount: -1 } }
+    ]);
+
+    return {
+      categories: aggregation,
+      period: {
+        from: dateFrom ? new Date(dateFrom) : null,
+        to: dateTo ? new Date(dateTo) : null
+      }
+    };
+  }
+
+  async getMonthlyTrends(userId, year) {
+    const startDate = new Date(year, 0, 1); // January 1st of the year
+    const endDate = new Date(year, 11, 31, 23, 59, 59); // December 31st of the year
+
+    const trends = await Transaction.aggregate([
+      {
+        $match: {
+          user: userId,
+          status: 'completed',
+          date: { $gte: startDate, $lte: endDate }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$date' },
+            month: { $month: '$date' },
+            type: '$type'
+          },
+          total: { $sum: '$amount' },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            year: '$_id.year',
+            month: '$_id.month'
+          },
+          income: {
+            $sum: {
+              $cond: [{ $eq: ['$_id.type', 'income'] }, '$total', 0]
+            }
+          },
+          expense: {
+            $sum: {
+              $cond: [{ $eq: ['$_id.type', 'expense'] }, '$total', 0]
+            }
+          },
+          transactionCount: { $sum: '$count' }
+        }
+      },
+      {
+        $project: {
+          year: '$_id.year',
+          month: '$_id.month',
+          income: 1,
+          expense: 1,
+          transactionCount: 1,
+          balance: { $subtract: ['$income', '$expense'] }
+        }
+      },
+      { $sort: { year: 1, month: 1 } }
+    ]);
+
+    // Fill in missing months with zero values
+    const monthlyData = [];
+    for (let month = 1; month <= 12; month++) {
+      const existingData = trends.find(t => t.month === month);
+      if (existingData) {
+        monthlyData.push(existingData);
+      } else {
+        monthlyData.push({
+          year,
+          month,
+          income: 0,
+          expense: 0,
+          transactionCount: 0,
+          balance: 0
+        });
+      }
+    }
+
+    return {
+      year,
+      monthlyTrends: monthlyData
+    };
+  }
 }
 
 export default new TransactionService();

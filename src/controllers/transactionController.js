@@ -73,6 +73,36 @@ class TransactionController {
       res.status(400).json({ error: error.message });
     }
   }
+
+  async getDashboardSummary(req, res) {
+    try {
+      const { dateFrom, dateTo } = req.query;
+      const summary = await TransactionService.getDashboardSummary(req.user._id, dateFrom, dateTo);
+      res.json(summary);
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  }
+
+  async getCategoryAggregation(req, res) {
+    try {
+      const { dateFrom, dateTo } = req.query;
+      const aggregation = await TransactionService.getCategoryAggregation(req.user._id, dateFrom, dateTo);
+      res.json(aggregation);
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  }
+
+  async getMonthlyTrends(req, res) {
+    try {
+      const year = req.params.year || new Date().getFullYear();
+      const trends = await TransactionService.getMonthlyTrends(req.user._id, parseInt(year));
+      res.json(trends);
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  }
 }
 
 export default new TransactionController();
